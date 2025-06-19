@@ -9,3 +9,13 @@ type User struct {
 	Password  string    `json:"password" db:"password"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
+
+type CreateUserRequest struct {
+	Name  string `json:"name" validate:"required,min=2,max=100"`
+	Email string `json:"email" validate:"required,email"`
+}
+
+type UpdateUserRequest struct {
+	Name  string `json:"name" validate:"min=2,max=100"`
+	Email string `json:"email" validate:"email"`
+}
