@@ -1,7 +1,6 @@
 package main
 
 import (
-	"articlehub-api/internal/server"
 	"context"
 	"fmt"
 	"log"
@@ -10,6 +9,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"articlehub-api/internal/server"
 
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -40,7 +41,6 @@ func gracefulShutdown(fiberServer *server.FiberServer, done chan bool) {
 }
 
 func main() {
-
 	server := server.New()
 
 	server.RegisterFiberRoutes()
