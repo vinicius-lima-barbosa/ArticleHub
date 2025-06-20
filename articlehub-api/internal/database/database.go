@@ -27,10 +27,10 @@ type Service interface {
 
 	// CRUD Operations
 	CreateUser(ctx context.Context, user *models.User) error
-	GetUsers(ctx context.Context, id int) ([]models.User, error)
-	GetUserById(ctx context.Context, id string) (*models.User, error)
+	GetUsers(ctx context.Context) ([]models.User, error)
+	GetUserById(ctx context.Context, id int) (*models.User, error)
 	UpdateUser(ctx context.Context, id int, user *models.User) error
-	DeleteUser(ctx context.Context, id string) error
+	DeleteUser(ctx context.Context, id int) error
 }
 
 type service struct {
@@ -47,6 +47,20 @@ var (
 	dbInstance *service
 )
 
+func (s *service) migrate() error {
+	query := `
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		name TEXT NOT NULL,
+		email TEXT UNIQUE NOT NULL,
+		password TEXT NOT NULL,
+		created_at TIMESTAMPTZ DEFAULT now(),
+		updated_at TIMESTAMPTZ DEFAULT now()
+	);`
+	_, err := s.db.Exec(query)
+	return err
+}
+
 func New() Service {
 	// Reuse Connection
 	if dbInstance != nil {
@@ -60,6 +74,10 @@ func New() Service {
 	dbInstance = &service{
 		db: db,
 	}
+	if err := dbInstance.migrate(); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
+
 	return dbInstance
 }
 
@@ -125,12 +143,12 @@ func (s *service) CreateUser(ctx context.Context, user *models.User) error {
 }
 
 // GetUsers retrieves all users from the database.
-func (s *service) GetUsers(ctx context.Context, id int) ([]models.User,
+func (s *service) GetUsers(ctx context.Context) ([]models.User,
 	error,
 ) {
 	query := `SELECT id, name, email, created_at, updated_at FROM users ORDER BY created_at DESC`
 
-	rows, err := s.db.QueryContext(ctx, query, id)
+	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get users: %w", err)
 	}
@@ -149,7 +167,7 @@ func (s *service) GetUsers(ctx context.Context, id int) ([]models.User,
 }
 
 // GetUserById retrieves a user by their ID from the database.
-func (s *service) GetUserById(ctx context.Context, id string) (*models.User, error) {
+func (s *service) GetUserById(ctx context.Context, id int) (*models.User, error) {
 	query := `SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1`
 	var user models.User
 	err := s.db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.UpdatedAt)
@@ -182,7 +200,7 @@ func (s *service) UpdateUser(ctx context.Context, id int, user *models.User) err
 	return nil
 }
 
-func (s *service) DeleteUser(ctx context.Context, id string) error {
+func (s *service) DeleteUser(ctx context.Context, id int) error {
 	query := `DELETE FROM users WHERE id = $1`
 	result, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -195,7 +213,7 @@ func (s *service) DeleteUser(ctx context.Context, id string) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("user with id %s not found", id)
+		return fmt.Errorf("user with id %d not found", id)
 	}
 
 	return nil
