@@ -1,18 +1,33 @@
-package server
+package handler
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
 
-	"articlehub-api/internal/models"
+	"articlehub-api/internal/database/repository"
+	"articlehub-api/internal/model"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func (s *FiberServer) CreateUser(c *fiber.Ctx) error {
-	var req models.CreateUserRequest
+type UserHandler struct {
+	Repo repository.UserRepository
+}
+
+func NewUserHandler(repo repository.UserRepository) *UserHandler {
+	if repo == nil {
+		fmt.Println("❌ UserRepository não foi inicializado")
+	} else {
+		fmt.Println("✅ UserHandler criado com sucesso")
+	}
+	return &UserHandler{Repo: repo}
+}
+
+func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
+	var req model.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -30,15 +45,16 @@ func (s *FiberServer) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user := &models.User{
-		Name:  req.Name,
-		Email: req.Email,
+	user := &model.User{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := s.db.CreateUser(ctx, user); err != nil {
+	if err := h.Repo.CreateUser(ctx, user); err != nil {
 		log.Printf("error creating user: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create user",
@@ -51,11 +67,11 @@ func (s *FiberServer) CreateUser(c *fiber.Ctx) error {
 	})
 }
 
-func (s *FiberServer) GetUsers(c *fiber.Ctx) error {
+func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	users, err := s.db.GetUsers(ctx)
+	users, err := h.Repo.GetUsers(ctx)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve users",
@@ -68,7 +84,7 @@ func (s *FiberServer) GetUsers(c *fiber.Ctx) error {
 	})
 }
 
-func (s *FiberServer) GetUserById(c *fiber.Ctx) error {
+func (h *UserHandler) GetUserById(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -79,7 +95,7 @@ func (s *FiberServer) GetUserById(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	user, err := s.db.GetUserById(ctx, id)
+	user, err := h.Repo.GetUserById(ctx, id)
 	if err != nil {
 		if err.Error() == "user not found" {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -97,14 +113,14 @@ func (s *FiberServer) GetUserById(c *fiber.Ctx) error {
 	})
 }
 
-func (s *FiberServer) UpdateUser(c *fiber.Ctx) error {
+func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid user ID",
 		})
 	}
-	var req models.UpdateUserRequest
+	var req model.UpdateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -114,7 +130,7 @@ func (s *FiberServer) UpdateUser(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	existingUser, err := s.db.GetUserById(ctx, id)
+	existingUser, err := h.Repo.GetUserById(ctx, id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "User not found",
@@ -128,7 +144,7 @@ func (s *FiberServer) UpdateUser(c *fiber.Ctx) error {
 		existingUser.Email = req.Email
 	}
 
-	if err := s.db.UpdateUser(ctx, id, existingUser); err != nil {
+	if err := h.Repo.UpdateUser(ctx, id, existingUser); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update user",
 		})
@@ -140,7 +156,7 @@ func (s *FiberServer) UpdateUser(c *fiber.Ctx) error {
 	})
 }
 
-func (s *FiberServer) DeleteUser(c *fiber.Ctx) error {
+func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -151,7 +167,7 @@ func (s *FiberServer) DeleteUser(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := s.db.DeleteUser(ctx, id); err != nil {
+	if err := h.Repo.DeleteUser(ctx, id); err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "User not found",
 		})
