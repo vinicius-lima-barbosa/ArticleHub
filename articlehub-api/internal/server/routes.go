@@ -16,15 +16,14 @@ func (s *FiberServer) RegisterFiberRoutes() {
 	}))
 
 	s.App.Get("/", s.HelloWorldHandler)
-
 	s.App.Get("/health", s.healthHandler)
 
 	users := s.App.Group("/users")
-	users.Post("/", s.CreateUser)
-	users.Get("/", s.GetUsers)
-	users.Get("/:id", s.GetUserById)
-	users.Put("/:id", s.UpdateUser)
-	users.Delete("/:id", s.DeleteUser)
+	users.Post("/", s.handler.CreateUser)
+	users.Get("/", s.handler.GetUsers)
+	users.Get("/:id", s.handler.GetUserById)
+	users.Put("/:id", s.handler.UpdateUser)
+	users.Delete("/:id", s.handler.DeleteUser)
 }
 
 func (s *FiberServer) HelloWorldHandler(c *fiber.Ctx) error {
