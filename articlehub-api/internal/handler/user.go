@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"articlehub-api/internal/database/repository"
 	"articlehub-api/internal/model"
+	"articlehub-api/internal/repository"
 
 	"github.com/gofiber/fiber/v2"
 )
