@@ -21,11 +21,6 @@ type userRepository struct {
 }
 
 func NewUserRepository(db *sql.DB) UserRepository {
-	if db == nil {
-		fmt.Println("❌ Banco de dados não inicializado")
-	} else {
-		fmt.Println("✅ Banco de dados conectado com sucesso")
-	}
 	return &userRepository{db: db}
 }
 

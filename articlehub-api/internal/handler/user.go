@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -18,11 +17,6 @@ type UserHandler struct {
 }
 
 func NewUserHandler(repo repository.UserRepository) *UserHandler {
-	if repo == nil {
-		fmt.Println("❌ UserRepository não foi inicializado")
-	} else {
-		fmt.Println("✅ UserHandler criado com sucesso")
-	}
 	return &UserHandler{Repo: repo}
 }
 
