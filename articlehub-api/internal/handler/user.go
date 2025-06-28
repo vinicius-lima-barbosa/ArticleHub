@@ -10,6 +10,7 @@ import (
 	"articlehub-api/internal/repository"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
@@ -39,10 +40,19 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to hash password",
+		})
+	}
+
+	hashedPassword := string(hash)
+
 	user := &model.User{
 		Name:     req.Name,
 		Email:    req.Email,
-		Password: req.Password,
+		Password: hashedPassword,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -57,7 +67,13 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "User created successfully",
-		"user":    user,
+		"user": &model.User{
+			ID:        user.ID,
+			Name:      req.Name,
+			Email:     req.Email,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
 	})
 }
 
