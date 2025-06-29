@@ -23,3 +23,8 @@ type UpdateUserRequest struct {
 	Name  string `json:"name" validate:"min=2,max=100"`
 	Email string `json:"email" validate:"email"`
 }
+
+type LoginRequest struct {
+	Email    string `json:"email" validate:"email"`
+	Password string `json:"password" validate:"required,min=6,max=100"`
+}
