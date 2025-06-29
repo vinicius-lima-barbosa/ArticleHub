@@ -1,6 +1,8 @@
 package server
 
 import (
+	"articlehub-api/internal/middleware"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
@@ -21,8 +23,9 @@ func (s *FiberServer) RegisterFiberRoutes() {
 	users := s.App.Group("/users")
 	users.Post("/", s.handler.CreateUser)
 	users.Get("/", s.handler.GetUsers)
+	users.Post("/login", s.handler.Login)
 	users.Get("/:id", s.handler.GetUserById)
-	users.Put("/:id", s.handler.UpdateUser)
+	users.Put("/:id", middleware.Middleware(), s.handler.UpdateUser)
 	users.Delete("/:id", s.handler.DeleteUser)
 }
 
