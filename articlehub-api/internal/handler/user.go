@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"log"
-	"strconv"
 	"time"
 
 	"articlehub-api/internal/auth"
@@ -11,6 +10,7 @@ import (
 	"articlehub-api/internal/repository"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -49,8 +49,10 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	hashedPassword := string(hash)
+	id, err := uuid.NewV7()
 
 	user := &model.User{
+		ID:       id.String(),
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: hashedPassword,
@@ -133,10 +135,10 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) GetUserById(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
+	id := c.Params("id")
+	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
+			"error": "User ID is required",
 		})
 	}
 
@@ -162,12 +164,8 @@ func (h *UserHandler) GetUserById(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
+	id := c.Params("id")
+
 	var req model.UpdateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -205,12 +203,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
+	id := c.Params("id")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

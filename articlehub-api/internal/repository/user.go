@@ -11,10 +11,10 @@ import (
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *model.User) error
 	GetUsers(ctx context.Context) ([]model.User, error)
-	GetUserById(ctx context.Context, id int) (*model.User, error)
+	GetUserById(ctx context.Context, id string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
-	UpdateUser(ctx context.Context, id int, user *model.User) error
-	DeleteUser(ctx context.Context, id int) error
+	UpdateUser(ctx context.Context, id string, user *model.User) error
+	DeleteUser(ctx context.Context, id string) error
 }
 
 type userRepository struct {
@@ -26,8 +26,8 @@ func NewUserRepository(db *sql.DB) UserRepository {
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user *model.User) error {
-	query := `INSERT INTO users (name, email, password, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, created_at, updated_at`
-	err := r.db.QueryRowContext(ctx, query, user.Name, user.Email, user.Password).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+	query := `INSERT INTO users (id, name, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, created_at, updated_at`
+	err := r.db.QueryRowContext(ctx, query, user.ID, user.Name, user.Email, user.Password).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
@@ -53,7 +53,7 @@ func (r *userRepository) GetUsers(ctx context.Context) ([]model.User, error) {
 	return users, nil
 }
 
-func (r *userRepository) GetUserById(ctx context.Context, id int) (*model.User, error) {
+func (r *userRepository) GetUserById(ctx context.Context, id string) (*model.User, error) {
 	query := `SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1`
 	var user model.User
 	err := r.db.QueryRowContext(ctx, query, id).
@@ -81,13 +81,13 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	return &user, nil
 }
 
-func (r *userRepository) UpdateUser(ctx context.Context, id int, user *model.User) error {
+func (r *userRepository) UpdateUser(ctx context.Context, id string, user *model.User) error {
 	query := `UPDATE users SET name = $1, email = $2, updated_at = NOW() WHERE id = $3 RETURNING updated_at`
 	return r.db.QueryRowContext(ctx, query, user.Name, user.Email, id).
 		Scan(&user.UpdatedAt)
 }
 
-func (r *userRepository) DeleteUser(ctx context.Context, id int) error {
+func (r *userRepository) DeleteUser(ctx context.Context, id string) error {
 	query := `DELETE FROM users WHERE id = $1`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
