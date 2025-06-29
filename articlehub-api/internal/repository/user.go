@@ -12,6 +12,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *model.User) error
 	GetUsers(ctx context.Context) ([]model.User, error)
 	GetUserById(ctx context.Context, id int) (*model.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	UpdateUser(ctx context.Context, id int, user *model.User) error
 	DeleteUser(ctx context.Context, id int) error
 }
@@ -57,6 +58,20 @@ func (r *userRepository) GetUserById(ctx context.Context, id int) (*model.User, 
 	var user model.User
 	err := r.db.QueryRowContext(ctx, query, id).
 		Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	query := `SELECT id, name, email, password, created_at, updated_at FROM users WHERE email = $1`
+	var user model.User
+	err := r.db.QueryRowContext(ctx, query, email).
+		Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")
