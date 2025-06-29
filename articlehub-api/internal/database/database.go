@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 
-	"articlehub-api/internal/database/repository"
+	"articlehub-api/internal/repository"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"

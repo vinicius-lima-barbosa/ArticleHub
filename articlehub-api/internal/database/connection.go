@@ -25,7 +25,7 @@ var (
 
 func NewConnection() *sql.DB {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s", username, password, host, port, database, schema)
-	fmt.Println("🔌 Connecting to:", connStr)
+	// fmt.Println("🔌 Connecting to:", connStr)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		log.Fatal("❌ Falha ao abrir conexão com o banco:", err)
