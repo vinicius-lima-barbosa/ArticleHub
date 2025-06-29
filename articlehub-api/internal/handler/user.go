@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"articlehub-api/internal/auth"
 	"articlehub-api/internal/model"
 	"articlehub-api/internal/repository"
 
@@ -74,6 +75,43 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
 		},
+	})
+}
+
+func (h *UserHandler) Login(c *fiber.Ctx) error {
+	var req model.LoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	user, err := h.Repo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid Email",
+		})
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid Password",
+		})
+	}
+
+	token, err := auth.CreateToken(user.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate token",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Login successful",
+		"token":   token,
 	})
 }
 
