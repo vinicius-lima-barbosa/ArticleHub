@@ -82,8 +82,8 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 }
 
 func (r *userRepository) UpdateUser(ctx context.Context, id string, user *model.User) error {
-	query := `UPDATE users SET name = $1, email = $2, updated_at = NOW() WHERE id = $3 RETURNING updated_at`
-	return r.db.QueryRowContext(ctx, query, user.Name, user.Email, id).
+	query := `UPDATE users SET name = $1, email = $2, avatar_url = $3, updated_at = NOW() WHERE id = $4 RETURNING updated_at`
+	return r.db.QueryRowContext(ctx, query, user.Name, user.Email, user.AvatarURL, id).
 		Scan(&user.UpdatedAt)
 }
 
