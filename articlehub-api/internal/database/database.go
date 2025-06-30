@@ -27,20 +27,6 @@ type service struct {
 	userRepo repository.UserRepository
 }
 
-// func (s *service) migrate() error {
-// 	query := `
-// 	CREATE TABLE IF NOT EXISTS users (
-// 		id SERIAL PRIMARY KEY,
-// 		name TEXT NOT NULL,
-// 		email TEXT UNIQUE NOT NULL,
-// 		password TEXT NOT NULL,
-// 		created_at TIMESTAMPTZ DEFAULT now(),
-// 		updated_at TIMESTAMPTZ DEFAULT now()
-// 	);`
-// 	_, err := s.db.Exec(query)
-// 	return err
-// }
-
 func New() Service {
 	db := NewConnection()
 	return &service{
