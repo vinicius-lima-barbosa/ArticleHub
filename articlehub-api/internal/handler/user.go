@@ -1,9 +1,16 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"log"
-	"strconv"
+	"mime/multipart"
+	"net/http"
+	"net/textproto"
+	"os"
+	"path/filepath"
 	"time"
 
 	"articlehub-api/internal/auth"
@@ -11,6 +18,7 @@ import (
 	"articlehub-api/internal/repository"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -49,8 +57,15 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	hashedPassword := string(hash)
+	id, err := uuid.NewV7()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate user ID",
+		})
+	}
 
 	user := &model.User{
+		ID:       id.String(),
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: hashedPassword,
@@ -133,10 +148,10 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) GetUserById(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
+	id := c.Params("id")
+	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
+			"error": "User ID is required",
 		})
 	}
 
@@ -162,14 +177,90 @@ func (h *UserHandler) GetUserById(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
+	id := c.Params("id")
+	fileHeader, err := c.FormFile("avatar")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
+			"error": "No file uploaded",
 		})
 	}
-	var req model.UpdateUserRequest
-	if err := c.BodyParser(&req); err != nil {
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to open file",
+		})
+	}
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to read file",
+		})
+	}
+
+	ext := filepath.Ext(fileHeader.Filename)
+	fileName := fmt.Sprintf("%s%s", uuid.NewString(), ext)
+
+	// Detecta o tipo MIME real do arquivo
+	contentType := http.DetectContentType(fileBytes)
+
+	// Monta multipart form com cabeçalho correto
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	partHeader := textproto.MIMEHeader{}
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, fileName))
+	partHeader.Set("Content-Type", contentType)
+
+	part, err := writer.CreatePart(partHeader)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create form part",
+		})
+	}
+	part.Write(fileBytes)
+	writer.Close()
+
+	// Faz o upload para o Supabase
+	req, err := http.NewRequest("POST",
+		fmt.Sprintf("%s/storage/v1/object/%s/%s", os.Getenv("S3_BUCKET_ENDPOINT"), os.Getenv("S3_BUCKET_NAME"), fileName),
+		body,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create upload request",
+		})
+	}
+
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("S3_BUCKET_SERVICE_ROLE"))
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to upload file to storage",
+		})
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return c.Status(resp.StatusCode).SendString(string(respBody))
+	}
+
+	// Gera a URL pública do avatar
+	avatarURL := fmt.Sprintf("%s/storage/v1/object/public/%s//%s",
+		os.Getenv("S3_BUCKET_ENDPOINT"),
+		os.Getenv("S3_BUCKET_NAME"),
+		fileName,
+	)
+
+	// Atualiza dados do usuário
+	var reqBody model.UpdateUserRequest
+	if err := c.BodyParser(&reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
@@ -185,12 +276,15 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	if req.Name != "" {
-		existingUser.Name = req.Name
+	if reqBody.Name != "" {
+		existingUser.Name = reqBody.Name
 	}
-	if req.Email != "" {
-		existingUser.Email = req.Email
+	if reqBody.Email != "" {
+		existingUser.Email = reqBody.Email
 	}
+
+	// Salva a URL do avatar
+	existingUser.AvatarURL = avatarURL
 
 	if err := h.Repo.UpdateUser(ctx, id, existingUser); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -205,12 +299,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
+	id := c.Params("id")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

@@ -5,10 +5,11 @@ import (
 )
 
 type User struct {
-	ID        int       `json:"id" db:"id"`
+	ID        string    `json:"id" db:"id"`
 	Name      string    `json:"name" db:"name"`
 	Email     string    `json:"email" db:"email"`
-	Password  string    `json:"password" db:"password"`
+	Password  string    `json:"-" db:"password"`
+	AvatarURL string    `json:"avatar_url" db:"avatar_url"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -20,8 +21,9 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Name  string `json:"name" validate:"min=2,max=100"`
-	Email string `json:"email" validate:"email"`
+	Name      string `json:"name" validate:"min=2,max=100"`
+	Email     string `json:"email" validate:"email"`
+	AvatarURL string `json:"avatar_url" validate:"omitempty,url"`
 }
 
 type LoginRequest struct {
