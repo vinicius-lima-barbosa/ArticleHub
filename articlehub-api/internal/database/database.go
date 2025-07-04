@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 
-	"articlehub-api/internal/repository"
+	user_repository "articlehub-api/internal/repository/user-repository"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
@@ -11,7 +11,7 @@ import (
 
 // Service represents a service that interacts with a database.
 type Service interface {
-	UserRepo() repository.UserRepository
+	UserRepo() user_repository.UserRepository
 
 	// Health returns a map of health status information.
 	// The keys and values in the map are service-specific.
@@ -24,18 +24,18 @@ type Service interface {
 
 type service struct {
 	db       *sql.DB
-	userRepo repository.UserRepository
+	userRepo user_repository.UserRepository
 }
 
 func New() Service {
 	db := NewConnection()
 	return &service{
 		db:       db,
-		userRepo: repository.NewUserRepository(db),
+		userRepo: user_repository.NewUserRepository(db),
 	}
 }
 
-func (s *service) UserRepo() repository.UserRepository {
+func (s *service) UserRepo() user_repository.UserRepository {
 	return s.userRepo
 }
 

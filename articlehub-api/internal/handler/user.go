@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"articlehub-api/internal/auth"
-	"articlehub-api/internal/model"
-	"articlehub-api/internal/repository"
+	user_model "articlehub-api/internal/model/user-model"
+	user_repository "articlehub-api/internal/repository/user-repository"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -23,15 +23,15 @@ import (
 )
 
 type UserHandler struct {
-	Repo repository.UserRepository
+	Repo user_repository.UserRepository
 }
 
-func NewUserHandler(repo repository.UserRepository) *UserHandler {
+func NewUserHandler(repo user_repository.UserRepository) *UserHandler {
 	return &UserHandler{Repo: repo}
 }
 
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	var req model.CreateUserRequest
+	var req user_model.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -64,7 +64,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user := &model.User{
+	user := &user_model.User{
 		ID:       id.String(),
 		Name:     req.Name,
 		Email:    req.Email,
@@ -83,7 +83,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "User created successfully",
-		"user": &model.User{
+		"user": &user_model.User{
 			ID:        user.ID,
 			Name:      req.Name,
 			Email:     req.Email,
@@ -94,7 +94,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) Login(c *fiber.Ctx) error {
-	var req model.LoginRequest
+	var req user_model.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -259,7 +259,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	)
 
 	// Atualiza dados do usuário
-	var reqBody model.UpdateUserRequest
+	var reqBody user_model.UpdateUserRequest
 	if err := c.BodyParser(&reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
