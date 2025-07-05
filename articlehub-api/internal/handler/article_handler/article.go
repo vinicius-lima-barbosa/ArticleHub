@@ -66,3 +66,67 @@ func (h *ArticleHandler) CreateArticle(c *fiber.Ctx) error {
 		"article": art,
 	})
 }
+
+func (h *ArticleHandler) GetArticleById(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Article ID is required",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	article, err := h.Repo.GetArticleById(ctx, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Article not found",
+		})
+	}
+
+	return c.JSON(article)
+}
+
+func (h *ArticleHandler) GetArticlesByAuthorId(c *fiber.Ctx) error {
+	authorId := c.Params("authorId")
+	if authorId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Author ID is required",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	articles, err := h.Repo.GetArticlesByAuthorId(ctx, authorId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve articles",
+		})
+	}
+
+	return c.JSON(articles)
+}
+
+func (h *ArticleHandler) DeleteArticle(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Article ID is required",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := h.Repo.DeleteArticle(ctx, id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete article",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Article deleted successfully",
+	})
+}
