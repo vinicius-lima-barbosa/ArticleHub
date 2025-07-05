@@ -31,6 +31,9 @@ func (s *FiberServer) RegisterFiberRoutes() {
 
 	articles := s.App.Group("/articles")
 	articles.Post("/", middleware.Middleware(), s.article_handler.CreateArticle)
+	articles.Get("/:id", s.article_handler.GetArticleById)
+	articles.Get("/author/:authorId", s.article_handler.GetArticlesByAuthorId)
+	articles.Delete("/:id", middleware.Middleware(), s.article_handler.DeleteArticle)
 }
 
 func (s *FiberServer) HelloWorldHandler(c *fiber.Ctx) error {
