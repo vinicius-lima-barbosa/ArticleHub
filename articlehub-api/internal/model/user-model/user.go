@@ -1,4 +1,4 @@
-package model
+package user_model
 
 import (
 	"time"
@@ -9,7 +9,7 @@ type User struct {
 	Name      string    `json:"name" db:"name"`
 	Email     string    `json:"email" db:"email"`
 	Password  string    `json:"-" db:"password"`
-	AvatarURL string    `json:"avatar_url" db:"avatar_url"`
+	AvatarURL *string   `json:"avatar_url,omitempty" db:"avatar_url"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -21,9 +21,11 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Name      string `json:"name" validate:"min=2,max=100"`
-	Email     string `json:"email" validate:"email"`
-	AvatarURL string `json:"avatar_url" validate:"omitempty,url"`
+	Name string `json:"name" validate:"min=2,max=100"`
+}
+
+type UpdateUserAvatarRequest struct {
+	AvatarURL string `json:"avatar_url" validate:"required"`
 }
 
 type LoginRequest struct {

@@ -24,17 +24,27 @@ func CreateToken(id string) (string, error) {
 	return tokenString, nil
 }
 
-func VerifyToken(tokenString string) error {
+func VerifyToken(tokenString string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secret_key, nil
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if !token.Valid {
-		return fmt.Errorf("invalid token")
+		return "", fmt.Errorf("invalid token")
 	}
 
-	return nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", fmt.Errorf("could not parse claims")
+	}
+
+	id, ok := claims["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("id not found in claims")
+	}
+
+	return id, nil
 }

@@ -27,11 +27,14 @@ func Middleware() fiber.Handler {
 
 		token := tokenParts[1]
 
-		if err := auth.VerifyToken(token); err != nil {
+		userId, err := auth.VerifyToken(token)
+		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid or expired token",
 			})
 		}
+
+		c.Locals("id", userId)
 
 		// Token is valid, continue
 		return c.Next()

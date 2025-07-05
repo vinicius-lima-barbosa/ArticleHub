@@ -21,12 +21,19 @@ func (s *FiberServer) RegisterFiberRoutes() {
 	s.App.Get("/health", s.healthHandler)
 
 	users := s.App.Group("/users")
-	users.Post("/", s.handler.CreateUser)
-	users.Get("/", s.handler.GetUsers)
-	users.Post("/login", s.handler.Login)
-	users.Get("/:id", s.handler.GetUserById)
-	users.Put("/:id", middleware.Middleware(), s.handler.UpdateUser)
-	users.Delete("/:id", s.handler.DeleteUser)
+	users.Get("/", s.user_handler.GetUsers)
+	users.Post("/", s.user_handler.CreateUser)
+	users.Post("/login", s.user_handler.Login)
+	users.Get("/:id", s.user_handler.GetUserById)
+	users.Put("/:id", middleware.Middleware(), s.user_handler.UpdateUser)
+	users.Put("/update-avatar/:id", middleware.Middleware(), s.user_handler.UpdateUserAvatar)
+	users.Delete("/:id", s.user_handler.DeleteUser)
+
+	articles := s.App.Group("/articles")
+	articles.Post("/", middleware.Middleware(), s.article_handler.CreateArticle)
+	articles.Get("/:id", s.article_handler.GetArticleById)
+	articles.Get("/author/:authorId", s.article_handler.GetArticlesByAuthorId)
+	articles.Delete("/:id", middleware.Middleware(), s.article_handler.DeleteArticle)
 }
 
 func (s *FiberServer) HelloWorldHandler(c *fiber.Ctx) error {

@@ -1,4 +1,4 @@
-package handler
+package user_handler
 
 import (
 	"bytes"
@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"articlehub-api/internal/auth"
-	"articlehub-api/internal/model"
-	"articlehub-api/internal/repository"
+	user_model "articlehub-api/internal/model/user-model"
+	user_repository "articlehub-api/internal/repository/user-repository"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -23,15 +23,15 @@ import (
 )
 
 type UserHandler struct {
-	Repo repository.UserRepository
+	Repo user_repository.UserRepository
 }
 
-func NewUserHandler(repo repository.UserRepository) *UserHandler {
+func NewUserHandler(repo user_repository.UserRepository) *UserHandler {
 	return &UserHandler{Repo: repo}
 }
 
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	var req model.CreateUserRequest
+	var req user_model.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -64,7 +64,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user := &model.User{
+	user := &user_model.User{
 		ID:       id.String(),
 		Name:     req.Name,
 		Email:    req.Email,
@@ -83,7 +83,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "User created successfully",
-		"user": &model.User{
+		"user": &user_model.User{
 			ID:        user.ID,
 			Name:      req.Name,
 			Email:     req.Email,
@@ -94,7 +94,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) Login(c *fiber.Ctx) error {
-	var req model.LoginRequest
+	var req user_model.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -136,6 +136,7 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 
 	users, err := h.Repo.GetUsers(ctx)
 	if err != nil {
+		fmt.Println("Erro ao buscar usuários:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve users",
 		})
@@ -177,6 +178,43 @@ func (h *UserHandler) GetUserById(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
+	id := c.Params("id")
+	// Atualiza dados do usuário
+	var reqBody user_model.UpdateUserRequest
+	if err := c.BodyParser(&reqBody); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	existingUser, err := h.Repo.GetUserById(ctx, id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	if reqBody.Name != "" {
+		existingUser.Name = reqBody.Name
+	}
+
+	if err := h.Repo.UpdateUser(ctx, id, existingUser); err != nil {
+		log.Printf("error updating user: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update user",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "User updated successfully",
+		"user":    existingUser,
+	})
+}
+
+func (h *UserHandler) UpdateUserAvatar(c *fiber.Ctx) error {
 	id := c.Params("id")
 	fileHeader, err := c.FormFile("avatar")
 	if err != nil {
@@ -258,14 +296,6 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		fileName,
 	)
 
-	// Atualiza dados do usuário
-	var reqBody model.UpdateUserRequest
-	if err := c.BodyParser(&reqBody); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -276,24 +306,17 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	if reqBody.Name != "" {
-		existingUser.Name = reqBody.Name
-	}
-	if reqBody.Email != "" {
-		existingUser.Email = reqBody.Email
-	}
+	existingUser.AvatarURL = &avatarURL
 
-	// Salva a URL do avatar
-	existingUser.AvatarURL = avatarURL
-
-	if err := h.Repo.UpdateUser(ctx, id, existingUser); err != nil {
+	if err := h.Repo.UpdateUserAvatar(ctx, id, existingUser); err != nil {
+		log.Printf("error updating user avatar: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update user",
+			"error": "Failed to update user avatar",
 		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "User updated successfully",
+		"message": "User avatar updated successfully",
 		"user":    existingUser,
 	})
 }
