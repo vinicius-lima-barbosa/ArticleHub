@@ -35,7 +35,7 @@ func (r *articleRepository) CreateArticle(ctx context.Context, article *article_
 }
 
 func (r *articleRepository) GetArticleById(ctx context.Context, id string) (*article_model.Article, error) {
-	query := `SELECT id, title, content, author_id, created_at, FROM articles WHERE id = $1`
+	query := `SELECT id, title, content, author_id, created_at FROM articles WHERE id = $1`
 
 	var article article_model.Article
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&article.ID, &article.Title, &article.Content, &article.AuthorID, &article.CreatedAt)
