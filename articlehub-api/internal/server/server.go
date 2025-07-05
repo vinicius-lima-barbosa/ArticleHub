@@ -4,19 +4,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"articlehub-api/internal/database"
-	"articlehub-api/internal/handler"
+	"articlehub-api/internal/handler/user_handler"
 )
 
 type FiberServer struct {
 	*fiber.App
 
 	db      database.Service
-	handler *handler.UserHandler
+	handler *user_handler.UserHandler
 }
 
 func New() *FiberServer {
 	db := database.New()
-	userHandler := handler.NewUserHandler(db.UserRepo())
+	userHandler := user_handler.NewUserHandler(db.UserRepo())
 
 	server := &FiberServer{
 		App: fiber.New(fiber.Config{
