@@ -24,6 +24,10 @@ type UpdateUserRequest struct {
 	Name string `json:"name" validate:"min=2,max=100"`
 }
 
+type UpdateUserAvatarRequest struct {
+	AvatarURL string `json:"avatar_url" validate:"required"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email" validate:"email"`
 	Password string `json:"password" validate:"required,min=6,max=100"`

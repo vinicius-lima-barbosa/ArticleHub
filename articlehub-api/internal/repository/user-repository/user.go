@@ -14,6 +14,7 @@ type UserRepository interface {
 	GetUserById(ctx context.Context, id string) (*user_model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*user_model.User, error)
 	UpdateUser(ctx context.Context, id string, user *user_model.User) error
+	UpdateUserAvatar(ctx context.Context, id string, user *user_model.User) error
 	DeleteUser(ctx context.Context, id string) error
 }
 
@@ -84,6 +85,12 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*use
 func (r *userRepository) UpdateUser(ctx context.Context, id string, user *user_model.User) error {
 	query := `UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING updated_at`
 	return r.db.QueryRowContext(ctx, query, user.Name, id).
+		Scan(&user.UpdatedAt)
+}
+
+func (r *userRepository) UpdateUserAvatar(ctx context.Context, id string, user *user_model.User) error {
+	query := `UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2 RETURNING updated_at`
+	return r.db.QueryRowContext(ctx, query, user.AvatarURL, id).
 		Scan(&user.UpdatedAt)
 }
 
