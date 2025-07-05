@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-// type DB_Connection struct {
-// 	db *sql.DB
-// }
-
 var (
 	database = os.Getenv("BLUEPRINT_DB_DATABASE")
 	password = os.Getenv("BLUEPRINT_DB_PASSWORD")
