@@ -28,6 +28,9 @@ func (s *FiberServer) RegisterFiberRoutes() {
 	users.Put("/:id", middleware.Middleware(), s.user_handler.UpdateUser)
 	users.Put("/update-avatar/:id", middleware.Middleware(), s.user_handler.UpdateUserAvatar)
 	users.Delete("/:id", s.user_handler.DeleteUser)
+
+	articles := s.App.Group("/articles")
+	articles.Post("/", middleware.Middleware(), s.article_handler.CreateArticle)
 }
 
 func (s *FiberServer) HelloWorldHandler(c *fiber.Ctx) error {
