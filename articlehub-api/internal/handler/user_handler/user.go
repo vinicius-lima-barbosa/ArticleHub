@@ -193,9 +193,6 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	if reqBody.Name != "" {
 		existingUser.Name = reqBody.Name
 	}
-	if reqBody.Email != "" {
-		existingUser.Email = reqBody.Email
-	}
 
 	if err := h.Repo.UpdateUser(ctx, id, existingUser); err != nil {
 		log.Printf("error updating user: %v", err)

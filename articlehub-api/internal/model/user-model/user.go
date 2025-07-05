@@ -21,9 +21,7 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Name  string `json:"name" validate:"min=2,max=100"`
-	Email string `json:"email" validate:"email"`
-	// AvatarURL string `json:"avatar_url" validate:"omitempty,url"`
+	Name string `json:"name" validate:"min=2,max=100"`
 }
 
 type LoginRequest struct {
