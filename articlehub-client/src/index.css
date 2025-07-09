@@ -1,11 +1,17 @@
 @import 'tailwindcss';
 
 @layer base {
+  /* Used Fonts */
   .font-zin-serif {
     font-family: 'Zin Serif', serif;
   }
 
   .font-helvetica-now-var {
     font-family: 'Helvetica Now Variable', sans-serif;
+  }
+
+  /* Landing Page Background Color */
+  .bg-beige {
+    background-color: rgb(247, 244, 237);
   }
 }
