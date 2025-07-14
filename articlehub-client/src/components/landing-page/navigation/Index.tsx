@@ -10,7 +10,7 @@ const Navigation = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="bg-beige fixed top-0 z-30 w-full border-b border-gray-900 shadow-md">
+    <nav className="bg-beige fixed top-0 z-30 w-full border-b border-gray-900 shadow-md h-20">
       <div className="px-6 py-5 flex items-center justify-between max-w-4xl mx-auto">
         <h1
           onClick={() => navigate('/')}
